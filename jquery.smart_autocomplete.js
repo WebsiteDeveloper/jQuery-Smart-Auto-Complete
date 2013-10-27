@@ -54,6 +54,81 @@
 (function ($) {
     "use strict";
     $.fn.smartAutoComplete = function () {
+        function keyHandler(event) {
+            //get the options
+            var options = $(this).data("smart-autocomplete"),
+                current_selection,
+                result_suggestions,
+                keyCode = event.keyCode;
+
+            if (keyCode === 38) { //Arrow key up
+                if (options.resultsContainer) {
+                    current_selection = options.currentSelection || 0;
+                    result_suggestions = $(options.resultsContainer).children();
+
+                    if (current_selection > 0) {
+                        $(options.context).trigger("itemUnfocus", result_suggestions[current_selection]);
+                        current_selection--;
+                    } else if ((current_selection - 1) < 0) {
+                        $(options.context).trigger("itemUnfocus", result_suggestions[current_selection]);
+                        current_selection = result_suggestions.length - 1;
+                    }
+
+                    options.currentSelection = current_selection;
+
+                    $(options.context).trigger("itemFocus", [result_suggestions[current_selection]]);
+                }
+            } else if (keyCode === 40) { //Arrow key down
+                if (options.resultsContainer && options.resultsContainer.is(':visible')) {
+                    current_selection = options.currentSelection;
+                    result_suggestions = $(options.resultsContainer).children();
+    
+                    if (current_selection >= 0) {
+                        $(options.context).trigger("itemUnfocus", result_suggestions[current_selection]);
+                    }
+
+                    if (isNaN(current_selection) || null === current_selection || (++current_selection >= result_suggestions.length)) {
+                        current_selection = 0;
+                    }
+
+                    options.currentSelection = current_selection;
+
+                    $(options.context).trigger("itemFocus", [result_suggestions[current_selection]]);
+                } else {
+                    $(options.context).trigger("keyIn", [$(this).val()]);
+                }
+            } else if (keyCode === 39 || keyCode === 13) { //Arrow key right and enter key
+                var type_ahead_field = $(options.context).prev(".smart_autocomplete_type_ahead_field");
+                    
+                if (options.resultsContainer && $(options.resultsContainer).is(':visible')) {
+                    current_selection = options.currentSelection;
+                    result_suggestions = $(options.resultsContainer).children();
+
+                    $(options.context).trigger("itemSelect", [result_suggestions[current_selection]]);
+                } else if (options.typeAhead && type_ahead_field.is(":visible")) {
+                    $(options.context).trigger("itemSelect", [type_ahead_field]);
+                }
+
+                return false;
+            } else if (keyCode !== 255) {
+                var current_char_count = $(options.context).val().length;
+         
+                //check whether the string has modified
+                if (options.originalCharCount === current_char_count) {
+                    return;
+                }
+
+                //check minimum and maximum number of characters are typed
+                if (current_char_count >= options.minCharLimit) {
+                    $(options.context).trigger("keyIn", [$(this).val()]);
+                } else {
+                    if (options.autocompleteFocused) {
+                        options.currentSelection = null;
+                        $(options.context).trigger("lostFocus");
+                    }
+                }
+            }
+        }
         
         if (arguments.length < 1) {
             // get the smart autocomplete object of the first element and return
@@ -365,80 +440,7 @@
             $(this).data("smart-autocomplete", options);
 
             // bind user events
-            $(this).on("keydown", function (ev) {
-                //get the options
-                var options = $(this).data("smart-autocomplete"),
-                    current_selection,
-                    result_suggestions;
-
-                if (ev.keyCode === 38) { //Arrow key up
-                    if (options.resultsContainer) {
-                        current_selection = options.currentSelection || 0;
-                        result_suggestions = $(options.resultsContainer).children();
-
-                        if (current_selection > 0) {
-                            $(options.context).trigger("itemUnfocus", result_suggestions[current_selection]);
-                            current_selection--;
-                        } else if ((current_selection - 1) < 0) {
-                            $(options.context).trigger("itemUnfocus", result_suggestions[current_selection]);
-                            current_selection = result_suggestions.length - 1;
-                        }
-
-                        options.currentSelection = current_selection;
-
-                        $(options.context).trigger("itemFocus", [result_suggestions[current_selection]]);
-                    }
-                } else if (ev.keyCode === 40) { //Arrow key down
-                    if (options.resultsContainer && options.resultsContainer.is(':visible')) {
-                        current_selection = options.currentSelection;
-                        result_suggestions = $(options.resultsContainer).children();
-
-                        if (current_selection >= 0) {
-                            $(options.context).trigger("itemUnfocus", result_suggestions[current_selection]);
-                        }
-
-                        if (isNaN(current_selection) || null === current_selection || (++current_selection >= result_suggestions.length)) {
-                            current_selection = 0;
-                        }
-
-                        options.currentSelection = current_selection;
-
-                        $(options.context).trigger("itemFocus", [result_suggestions[current_selection]]);
-                    } else {
-                        $(options.context).trigger("keyIn", [$(this).val()]);
-                    }
-                } else if (ev.keyCode === 39 || ev.keyCode === 13) { //Arrow key right and enter key
-                    var type_ahead_field = $(options.context).prev(".smart_autocomplete_type_ahead_field");
-                    
-                    if (options.resultsContainer && $(options.resultsContainer).is(':visible')) {
-                        current_selection = options.currentSelection;
-                        result_suggestions = $(options.resultsContainer).children();
-
-                        $(options.context).trigger("itemSelect", [result_suggestions[current_selection]]);
-                    } else if (options.typeAhead && type_ahead_field.is(":visible")) {
-                        $(options.context).trigger("itemSelect", [type_ahead_field]);
-                    }
-
-                    return false;
-                } else if (ev.keyCode !== 255) {
-                    var current_char_count = $(options.context).val().length;
-         
-                    //check whether the string has modified
-                    if (options.originalCharCount === current_char_count) {
-                        return;
-                    }
-
-                    //check minimum and maximum number of characters are typed
-                    if (current_char_count >= options.minCharLimit) {
-                        $(options.context).trigger("keyIn", [$(this).val()]);
-                    } else {
-                        if (options.autocompleteFocused) {
-                            options.currentSelection = null;
-                            $(options.context).trigger("lostFocus");
-                        }
-                    }
-                }
-            });
+            $(this).on("keydown", keyHandler);
 
             $(this).focus(function () {
                 //if the field is in a form capture the return key event
