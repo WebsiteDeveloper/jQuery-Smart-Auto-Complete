@@ -1,6 +1,8 @@
 /**
  * Smart Auto Complete plugin
  *
+ * Copyright (c) 2013 Bernhard Sirlinger
+ *
  * Copyright (c) 2011 Lakshan Perera (laktek.com)
  * Licensed under the MIT (http://www.opensource.org/licenses/mit-license.php)  licenses.
  *
@@ -58,10 +60,10 @@
             //get the options
             var options = $(this).data("smart-autocomplete"),
                 current_selection,
-                result_suggestions,
-                keyCode = event.keyCode;
+                result_suggestions;
 
-            if (keyCode === 38) { //Arrow key up
+            switch (event.keyCode) {
+            case 38://Arrow key up
                 if (options.resultsContainer) {
                     current_selection = options.currentSelection || 0;
                     result_suggestions = $(options.resultsContainer).children();
@@ -73,12 +75,13 @@
                         $(options.context).trigger("itemUnfocus", result_suggestions[current_selection]);
                         current_selection = result_suggestions.length - 1;
                     }
-
+                
                     options.currentSelection = current_selection;
-
                     $(options.context).trigger("itemFocus", [result_suggestions[current_selection]]);
                 }
-            } else if (keyCode === 40) { //Arrow key down
+                break;
+                    
+            case 40://Arrow key down
                 if (options.resultsContainer && options.resultsContainer.is(':visible')) {
                     current_selection = options.currentSelection;
                     result_suggestions = $(options.resultsContainer).children();
@@ -97,7 +100,10 @@
                 } else {
                     $(options.context).trigger("keyIn", [$(this).val()]);
                 }
-            } else if (keyCode === 39 || keyCode === 13) { //Arrow key right and enter key
+                break;
+            
+            case 13:
+            case 39:
                 var type_ahead_field = $(options.context).prev(".smart_autocomplete_type_ahead_field");
                     
                 if (options.resultsContainer && $(options.resultsContainer).is(':visible')) {
@@ -108,9 +114,12 @@
                 } else if (options.typeAhead && type_ahead_field.is(":visible")) {
                     $(options.context).trigger("itemSelect", [type_ahead_field]);
                 }
-
                 return false;
-            } else if (keyCode !== 255) {
+                    
+            case 255:
+                break;
+                    
+            default:
                 var current_char_count = $(options.context).val().length;
          
                 //check whether the string has modified
@@ -127,6 +136,7 @@
                         $(options.context).trigger("lostFocus");
                     }
                 }
+                break;
             }
         }
         
